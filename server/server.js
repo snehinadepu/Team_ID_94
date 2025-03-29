@@ -1,28 +1,38 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
-const dotenv = require('dotenv');
+const { requireAuth } = require('@clerk/express'); // ✅ Correct import for Clerk middleware
+require('dotenv').config();
+
 const app = express();
 
-// Load environment variables from .env file
-dotenv.config();
-
-// Middleware
 app.use(cors());
 app.use(express.json());
 
-// Connect to MongoDB
+// MongoDB connection
 mongoose.connect(process.env.MONGO_URI, {
     useNewUrlParser: true,
     useUnifiedTopology: true,
 }).then(() => console.log('✅ MongoDB connected successfully'))
-  .catch(err => console.error('❌ MongoDB connection error:', err));
+    .catch(err => console.error('❌ MongoDB connection error:', err));
 
-// Sample route
+// Test Route
 app.get('/', (req, res) => {
-    res.send('Agricultural Marketplace Backend Running');
+    res.send('Server is running...');
 });
 
-// Set the PORT
+// Protected Route (using requireAuth middleware)
+app.get('/api/protected', requireAuth(), (req, res) => {  // Note: Call requireAuth() as a function
+    const userId = req.auth.userId;  // Extract userId from the request object
+    if (userId) {
+        res.json({ message: `Welcome, authenticated user with ID: ${userId}` });
+    } else {
+        res.status(401).json({ message: 'Unauthorized' });
+    }
+});
+
+// Start the server
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
+app.listen(PORT, () => {
+    console.log(`🚀 Server running on port ${PORT}`);
+});
